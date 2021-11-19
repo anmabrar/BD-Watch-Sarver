@@ -33,6 +33,7 @@ client.connect((err) =>{
     const watchProduct = client.db("BDwatch").collection("Product");
     const purchaseProduct = client.db("BDwatch").collection("purchase");
     const myReview = client.db("BDwatch").collection("review");
+    const usersCollection = client.db("BDwatch").collection("users");
 
     // add Product
 
@@ -101,6 +102,21 @@ client.connect((err) =>{
         });
     });
 
+    // Manage all products
+  app.get("/manageProducts", async (req, res) => {
+    const result = await watchProduct.find({}).toArray();
+    res.send(result);
+  });
+
+    // delete Product
+
+    app.delete("/deleteProduct/:id", async (req, res) => {
+      const result = await watchProduct.deleteOne({
+        _id: ObjectId(req.params.id),
+      });
+      res.send(result);
+    });
+
      // add Review
 
      app.post("/addReview", async (req, res) => {
@@ -113,7 +129,51 @@ client.connect((err) =>{
     const result = await myReview.find({}).toArray();
     res.send(result);
   });
-  
+
+// Add users
+app.post('/users', async (req, res) => {
+  const user = req.body;
+  const result = await usersCollection.insertOne(user);
+  console.log(result);
+  res.json(result);
+});
+
+// Add users from google 
+app.put('/users', async (req, res) => {
+  const user = req.body;
+  const filter = { email: user.email };
+  const options = { upsert: true };
+  const updateDoc = { $set: user };
+  const result = await usersCollection.updateOne(filter, updateDoc, options);
+  res.json(result);
+});
+
+
+
+// Make Admin
+
+app.put('/users/admin', async (req,res) => {
+  const user = req.body;
+  const filter = {email: user.email};
+  const updateDoc = {$set : {role : 'admin'}}
+  const result = await usersCollection.updateOne(filter, updateDoc);
+  res.json(result);
+});
+
+
+
+
+
+  app.get('/users/:email', async (req, res) => {
+    const email = req.params.email;
+    const query = { email: email };
+    const user = await usersCollection.findOne(query);
+    let isAdmin = false;
+    if (user?.role === 'admin') {
+        isAdmin = true;
+    }
+    res.json({ admin: isAdmin });
+})
 
 
 });
